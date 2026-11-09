@@ -1,0 +1,8 @@
+Flask
+Flask-Cors
+Flask-SQLAlchemy
+python-dotenv
+openai
+gunicorn
+requests
+Pillow
