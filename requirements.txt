@@ -6,3 +6,4 @@ openai
 gunicorn
 requests
 Pillow
+psycopg[binary]
