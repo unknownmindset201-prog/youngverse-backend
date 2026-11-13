@@ -575,3 +575,114 @@ class Attendance(db.Model):
                 if self.created_at else None
             )
         }
+
+
+# NOTIFICATION SYSTEM
+# =====================================
+
+class Notification(db.Model):
+
+    __tablename__ = "notifications"
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    title = db.Column(
+        db.String(200),
+        nullable=False
+    )
+
+    message = db.Column(
+        db.Text,
+        nullable=False
+    )
+
+    category = db.Column(
+        db.String(50),
+        nullable=False,
+        default="announcement"
+    )
+
+    target_type = db.Column(
+        db.String(50),
+        nullable=False,
+        default="all"
+    )
+
+    created_by = db.Column(
+        db.String(100),
+        nullable=False,
+        default="admin"
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    recipients = db.relationship(
+        "NotificationRecipient",
+        backref="notification",
+        cascade="all, delete-orphan"
+    )
+
+
+class NotificationRecipient(db.Model):
+
+    __tablename__ = "notification_recipients"
+
+    id = db.Column(
+        db.Integer,
+        primary_key=True
+    )
+
+    notification_id = db.Column(
+        db.Integer,
+        db.ForeignKey("notifications.id"),
+        nullable=False
+    )
+
+    recipient_role = db.Column(
+        db.String(20),
+        nullable=False
+    )
+
+    recipient_id = db.Column(
+        db.Integer,
+        nullable=False
+    )
+
+    is_read = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False
+    )
+
+    read_at = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    is_deleted = db.Column(
+        db.Boolean,
+        default=False,
+        nullable=False
+    )
+
+    deleted_at = db.Column(
+        db.DateTime,
+        nullable=True
+    )
+
+    created_at = db.Column(
+        db.DateTime,
+        default=datetime.utcnow
+    )
+
+    __table_args__ = (
+        db.UniqueConstraint(
+            "notification_id",
+            "recipient_role",
+            "recipient_id",
+            name="unique_notification_recipient"
+        ),
+    )

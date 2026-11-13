@@ -82,11 +82,24 @@ def normalize_class(value):
         "class 7": "7th",
         "class 8": "8th",
         "class 9": "9th",
-        "class 10": "10th"
+        "class 10": "10th",
+
+        "class-5": "5th",
+        "class-6": "6th",
+        "class-7": "7th",
+        "class-8": "8th",
+        "class-9": "9th",
+        "class-10": "10th",
+
+        "5": "5th",
+        "6": "6th",
+        "7": "7th",
+        "8": "8th",
+        "9": "9th",
+        "10": "10th"
     }
 
     return mapping.get(value, value)
-
 
 def update_total_marks(test):
 

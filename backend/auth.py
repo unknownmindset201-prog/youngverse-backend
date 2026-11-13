@@ -10,7 +10,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from sqlalchemy.exc import IntegrityError
 
 from .database import db
-from .models import Student, Parent, ParentStudentLink
+from .extensions import limiter
+from .models import Student, Parent, ParentStudentLink, Batch, BatchEnrollment
 
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -94,6 +95,7 @@ def parent_required(func):
 # =====================================
 
 @auth_bp.route("/login", methods=["POST"])
+@limiter.limit("5 per minute")
 def login():
     data = request.get_json(silent=True) or {}
 
@@ -227,6 +229,7 @@ def student_register():
 # =====================================
 
 @auth_bp.route("/student/login", methods=["POST"])
+@limiter.limit("5 per minute")
 def student_login():
     data = request.get_json(silent=True) or {}
 
@@ -540,6 +543,7 @@ def parent_register():
 # =====================================
 
 @auth_bp.route("/parent/login", methods=["POST"])
+@limiter.limit("5 per minute")
 def parent_login():
     data = request.get_json(silent=True) or {}
 
@@ -734,6 +738,85 @@ def get_parent_children():
 
 
 # =====================================
+# PARENT - CHILD BATCH DETAILS
+# =====================================
+
+@auth_bp.route("/parent/batches", methods=["GET"])
+@parent_required
+def get_parent_batches():
+
+    # Logged-in parent de linked children
+    links = ParentStudentLink.query.filter_by(
+        parent_id=session["parent_id"]
+    ).all()
+
+    student_ids = [
+        link.student.id
+        for link in links
+        if link.student and link.student.is_active
+    ]
+
+    if not student_ids:
+        return jsonify({
+            "success": True,
+            "batches": [],
+            "total_batches": 0
+        }), 200
+
+    # Sirf linked children de enrollments
+    enrollments = BatchEnrollment.query.filter(
+        BatchEnrollment.student_id.in_(student_ids)
+    ).all()
+
+    batches = []
+
+    for enrollment in enrollments:
+
+        batch = enrollment.batch
+
+        if not batch:
+            continue
+
+        student = enrollment.student
+
+        batches.append({
+            "enrollment_id": enrollment.id,
+            "student_id": enrollment.student_id,
+            "student_name": student.name if student else None,
+
+            "batch_id": batch.id,
+            "title": batch.title,
+            "description": batch.description,
+            "board": batch.board,
+            "class_name": batch.class_name,
+            "subject": batch.subject,
+            "teacher_name": batch.teacher_name,
+            "fees": batch.fees,
+            "schedule": batch.schedule,
+            "start_date": (
+                batch.start_date.isoformat()
+                if batch.start_date else None
+            ),
+            "end_date": (
+                batch.end_date.isoformat()
+                if batch.end_date else None
+            ),
+
+            "enrollment_status": enrollment.status,
+            "enrollment_date": (
+                enrollment.created_at.isoformat()
+                if enrollment.created_at else None
+            )
+        })
+
+    return jsonify({
+        "success": True,
+        "batches": batches,
+        "total_batches": len(batches)
+    }), 200
+
+# =====================================
+
 # PARENT LOGOUT
 # =====================================
 
